@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Report Incident - Crisis Management System{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Report Incident</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="incidentForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.title.label(class="form-label") }}
+                            {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else "")) }}
+                            {% for error in form.title.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.incident_type.label(class="form-label") }}
+                                {{ form.incident_type(class="form-select" + (" is-invalid" if form.incident_type.errors else "")) }}
+                                {% for error in form.incident_type.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.priority.label(class="form-label") }}
+                                {{ form.priority(class="form-select" + (" is-invalid" if form.priority.errors else "")) }}
+                                {% for error in form.priority.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="4") }}
+                            {% for error in form.description.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.address.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.address(class="form-control" + (" is-invalid" if form.address.errors else ""), rows="3") }}
+                                <button type="button" class="btn btn-outline-secondary" id="getLocationBtn">
+                                    <i class="fas fa-map-marker-alt me-1"></i>Get Current Location
+                                </button>
+                            </div>
+                            {% for error in form.address.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <div class="form-text">Click "Get Current Location" to automatically fill your location.</div>
+                            
+                            {{ form.latitude(id="latitude") }}
+                            {{ form.longitude(id="longitude") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.image.label(class="form-label") }}
+                            {{ form.image(class="form-control" + (" is-invalid" if form.image.errors else "")) }}
+                            {% for error in form.image.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <div class="form-text">Upload an image to help describe the incident (optional).</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('user.dashboard') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/geolocation.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const getLocationBtn = document.getElementById('getLocationBtn');
+    const addressField = document.getElementById('address');
+    const latField = document.getElementById('latitude');
+    const lonField = document.getElementById('longitude');
+    
+    getLocationBtn.addEventListener('click', function() {
+        getLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Getting Location...';
+        getLocationBtn.disabled = true;
+        
+        getCurrentLocation(function(position) {
+            latField.value = position.coords.latitude;
+            lonField.value = position.coords.longitude;
+            
+            // Reverse geocode to get address
+            reverseGeocode(position.coords.latitude, position.coords.longitude, function(address) {
+                addressField.value = address;
+                getLocationBtn.innerHTML = '<i class="fas fa-check me-1"></i>Location Found';
+                getLocationBtn.classList.remove('btn-outline-secondary');
+                getLocationBtn.classList.add('btn-success');
+                
+                setTimeout(() => {
+                    getLocationBtn.innerHTML = '<i class="fas fa-map-marker-alt me-1"></i>Get Current Location';
+                    getLocationBtn.classList.remove('btn-success');
+                    getLocationBtn.classList.add('btn-outline-secondary');
+                    getLocationBtn.disabled = false;
+                }, 2000);
+            });
+        }, function(error) {
+            console.error('Geolocation error:', error);
+            getLocationBtn.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Location Error';
+            getLocationBtn.classList.remove('btn-outline-secondary');
+            getLocationBtn.classList.add('btn-warning');
+            
+            setTimeout(() => {
+                getLocationBtn.innerHTML = '<i class="fas fa-map-marker-alt me-1"></i>Get Current Location';
+                getLocationBtn.classList.remove('btn-warning');
+                getLocationBtn.classList.add('btn-outline-secondary');
+                getLocationBtn.disabled = false;
+            }, 2000);
+        });
+    });
+});
+</script>
+{% endblock %}

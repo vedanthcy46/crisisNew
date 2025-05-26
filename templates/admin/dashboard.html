@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Crisis Management System{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="fas fa-cog me-2"></i>Admin Dashboard</h2>
+            <p class="text-muted">Welcome back, {{ current_user.full_name }}!</p>
+        </div>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-users text-primary"></i>
+                    </h5>
+                    <h3 class="mb-0">{{ stats.total_users }}</h3>
+                    <small class="text-muted">Total Users</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-user-shield text-success"></i>
+                    </h5>
+                    <h3 class="mb-0">{{ stats.total_rescue_teams }}</h3>
+                    <small class="text-muted">Rescue Teams</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                    </h5>
+                    <h3 class="mb-0">{{ stats.total_incidents }}</h3>
+                    <small class="text-muted">Total Incidents</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-tools text-info"></i>
+                    </h5>
+                    <h3 class="mb-0">{{ stats.total_resources }}</h3>
+                    <small class="text-muted">Resources</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Alert for High Priority Incidents -->
+    {% if stats.high_priority_incidents > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-danger" role="alert">
+                <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>High Priority Alert!</h5>
+                <p class="mb-0">
+                    There are <strong>{{ stats.high_priority_incidents }}</strong> high priority incidents that need immediate attention.
+                    <a href="{{ url_for('admin.incidents', priority='high') }}" class="alert-link">View now</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Incident Status Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Incident Status Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <h4 class="text-warning">{{ stats.incident_stats.pending }}</h4>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h4 class="text-info">{{ stats.incident_stats.in_progress }}</h4>
+                            <small class="text-muted">In Progress</small>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h4 class="text-success">{{ stats.incident_stats.resolved }}</h4>
+                            <small class="text-muted">Resolved</small>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h4 class="text-secondary">{{ stats.incident_stats.closed }}</h4>
+                            <small class="text-muted">Closed</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-user-plus me-2"></i>Add User
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin.add_resource') }}" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-plus-circle me-2"></i>Add Resource
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin.incidents') }}" class="btn btn-warning btn-lg w-100">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Manage Incidents
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin.analytics') }}" class="btn btn-info btn-lg w-100">
+                                <i class="fas fa-chart-bar me-2"></i>View Analytics
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Incidents -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Incidents</h5>
+                    <a href="{{ url_for('admin.incidents') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_incidents %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Title</th>
+                                        <th>Type</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                        <th>Reporter</th>
+                                        <th>Assigned Team</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for incident in recent_incidents %}
+                                    <tr>
+                                        <td>#{{ incident.id }}</td>
+                                        <td>
+                                            <strong>{{ incident.title }}</strong>
+                                            {% if incident.image_path %}
+                                                <i class="fas fa-image text-info ms-1" title="Has image"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ incident.incident_type.replace('_', ' ').title() }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ incident.get_priority_color() }}">{{ incident.priority.title() }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ incident.get_status_color() }}">{{ incident.status.replace('_', ' ').title() }}</span>
+                                        </td>
+                                        <td>{{ incident.reporter.full_name }}</td>
+                                        <td>
+                                            {% if incident.assigned_team %}
+                                                <span class="text-success">
+                                                    <i class="fas fa-user-shield me-1"></i>{{ incident.assigned_team.full_name }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">
+                                                    <i class="fas fa-clock me-1"></i>Unassigned
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ incident.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            <a href="{{ url_for('admin.view_incident', incident_id=incident.id) }}" 
+                                               class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No incidents yet</h5>
+                            <p class="text-muted">No incidents have been reported yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Auto-refresh dashboard every 30 seconds
+    setTimeout(() => {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}

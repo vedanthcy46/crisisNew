@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Resources - Crisis Management System{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-tools me-2"></i>Manage Resources</h2>
+                <a href="{{ url_for('admin.add_resource') }}" class="btn btn-success">
+                    <i class="fas fa-plus-circle me-2"></i>Add New Resource
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% if resources.items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        <th>Location</th>
+                                        <th>Assignments</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for resource in resources.items %}
+                                    <tr>
+                                        <td>#{{ resource.id }}</td>
+                                        <td><strong>{{ resource.name }}</strong></td>
+                                        <td>
+                                            {% if resource.resource_type == 'vehicle' %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-car me-1"></i>Vehicle
+                                                </span>
+                                            {% elif resource.resource_type == 'equipment' %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-tools me-1"></i>Equipment
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-users me-1"></i>Personnel
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if resource.description %}
+                                                {{ resource.description[:50] }}{% if resource.description|length > 50 %}...{% endif %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ resource.get_status_color() }}">
+                                                {{ resource.availability_status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ resource.location or '-' }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ resource.incident_assignments.count() }}</span>
+                                        </td>
+                                        <td>{{ resource.created_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('admin.edit_resource', resource_id=resource.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary" title="Edit Resource">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if resources.pages > 1 %}
+                        <nav aria-label="Resources pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if resources.has_prev %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.resources', page=resources.prev_num) }}">Previous</a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for page_num in resources.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                                    {% if page_num %}
+                                        {% if page_num != resources.page %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('admin.resources', page=page_num) }}">{{ page_num }}</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ page_num }}</span>
+                                            </li>
+                                        {% endif %}
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if resources.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.resources', page=resources.next_num) }}">Next</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-tools fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">No resources found</h4>
+                            <p class="text-muted">Start by adding your first resource.</p>
+                            <a href="{{ url_for('admin.add_resource') }}" class="btn btn-success">
+                                <i class="fas fa-plus-circle me-2"></i>Add First Resource
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

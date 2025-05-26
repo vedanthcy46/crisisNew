@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Incidents - Crisis Management System{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-exclamation-triangle me-2"></i>Manage Incidents</h2>
+                <a href="{{ url_for('admin.analytics') }}" class="btn btn-info">
+                    <i class="fas fa-chart-bar me-2"></i>View Analytics
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">Status Filter</label>
+                            <select name="status" id="status" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="pending" {{ 'selected' if status_filter == 'pending' }}>Pending</option>
+                                <option value="in_progress" {{ 'selected' if status_filter == 'in_progress' }}>In Progress</option>
+                                <option value="resolved" {{ 'selected' if status_filter == 'resolved' }}>Resolved</option>
+                                <option value="closed" {{ 'selected' if status_filter == 'closed' }}>Closed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="priority" class="form-label">Priority Filter</label>
+                            <select name="priority" id="priority" class="form-select">
+                                <option value="">All Priorities</option>
+                                <option value="low" {{ 'selected' if priority_filter == 'low' }}>Low</option>
+                                <option value="medium" {{ 'selected' if priority_filter == 'medium' }}>Medium</option>
+                                <option value="high" {{ 'selected' if priority_filter == 'high' }}>High</option>
+                                <option value="critical" {{ 'selected' if priority_filter == 'critical' }}>Critical</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter me-2"></i>Apply Filters
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% if incidents.items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Title</th>
+                                        <th>Type</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                        <th>Reporter</th>
+                                        <th>Assigned Team</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for incident in incidents.items %}
+                                    <tr>
+                                        <td>#{{ incident.id }}</td>
+                                        <td>
+                                            <strong>{{ incident.title }}</strong>
+                                            {% if incident.image_path %}
+                                                <i class="fas fa-image text-info ms-1" title="Has image"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ incident.incident_type.replace('_', ' ').title() }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ incident.get_priority_color() }}">{{ incident.priority.title() }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ incident.get_status_color() }}">{{ incident.status.replace('_', ' ').title() }}</span>
+                                        </td>
+                                        <td>{{ incident.reporter.full_name }}</td>
+                                        <td>
+                                            {% if incident.assigned_team %}
+                                                <span class="text-success">
+                                                    <i class="fas fa-user-shield me-1"></i>{{ incident.assigned_team.full_name }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">
+                                                    <i class="fas fa-clock me-1"></i>Unassigned
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ incident.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            <a href="{{ url_for('admin.view_incident', incident_id=incident.id) }}" 
+                                               class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if incidents.pages > 1 %}
+                        <nav aria-label="Incidents pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if incidents.has_prev %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.incidents', page=incidents.prev_num, status=status_filter, priority=priority_filter) }}">Previous</a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for page_num in incidents.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                                    {% if page_num %}
+                                        {% if page_num != incidents.page %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('admin.incidents', page=page_num, status=status_filter, priority=priority_filter) }}">{{ page_num }}</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ page_num }}</span>
+                                            </li>
+                                        {% endif %}
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if incidents.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.incidents', page=incidents.next_num, status=status_filter, priority=priority_filter) }}">Next</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-exclamation-triangle fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">No incidents found</h4>
+                            <p class="text-muted">
+                                {% if status_filter or priority_filter %}
+                                    No incidents match your current filters.
+                                {% else %}
+                                    No incidents have been reported yet.
+                                {% endif %}
+                            </p>
+                            {% if status_filter or priority_filter %}
+                                <a href="{{ url_for('admin.incidents') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>Clear Filters
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

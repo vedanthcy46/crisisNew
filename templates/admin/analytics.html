@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Crisis Management System{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-chart-bar me-2"></i>Analytics Dashboard</h2>
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Row 1 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Incidents by Status</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-doughnut me-2"></i>Incidents by Type</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="typeChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Row 2 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Incidents by Priority</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="priorityChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Monthly Trends</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="trendsChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading State -->
+    <div id="loadingState" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">Loading analytics data...</p>
+    </div>
+    
+    <!-- Error State -->
+    <div id="errorState" class="alert alert-danger d-none" role="alert">
+        <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Error Loading Data</h6>
+        <p class="mb-0">Unable to load analytics data. Please refresh the page or try again later.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loadingState = document.getElementById('loadingState');
+    const errorState = document.getElementById('errorState');
+    
+    // Color schemes for charts
+    const statusColors = {
+        'Pending': '#ffc107',
+        'In Progress': '#17a2b8', 
+        'Resolved': '#28a745',
+        'Closed': '#6c757d'
+    };
+    
+    const typeColors = [
+        '#ff6384', '#36a2eb', '#cc65fe', '#ffce56',
+        '#fd7e14', '#20c997', '#6f42c1', '#e83e8c'
+    ];
+    
+    const priorityColors = {
+        'Low': '#28a745',
+        'Medium': '#ffc107',
+        'High': '#dc3545',
+        'Critical': '#343a40'
+    };
+    
+    // Fetch analytics data
+    fetch('{{ url_for("admin.analytics_data") }}')
+        .then(response => response.json())
+        .then(data => {
+            loadingState.style.display = 'none';
+            createCharts(data);
+        })
+        .catch(error => {
+            console.error('Error fetching analytics data:', error);
+            loadingState.style.display = 'none';
+            errorState.classList.remove('d-none');
+        });
+    
+    function createCharts(data) {
+        // Status Distribution Chart
+        if (data.status_distribution && data.status_distribution.labels.length > 0) {
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            new Chart(statusCtx, {
+                type: 'pie',
+                data: {
+                    labels: data.status_distribution.labels,
+                    datasets: [{
+                        data: data.status_distribution.data,
+                        backgroundColor: data.status_distribution.labels.map(label => statusColors[label] || '#6c757d'),
+                        borderWidth: 2,
+                        borderColor: '#495057'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#ffffff',
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Type Distribution Chart
+        if (data.type_distribution && data.type_distribution.labels.length > 0) {
+            const typeCtx = document.getElementById('typeChart').getContext('2d');
+            new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.type_distribution.labels,
+                    datasets: [{
+                        data: data.type_distribution.data,
+                        backgroundColor: typeColors.slice(0, data.type_distribution.labels.length),
+                        borderWidth: 2,
+                        borderColor: '#495057'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#ffffff',
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Priority Distribution Chart
+        if (data.priority_distribution && data.priority_distribution.labels.length > 0) {
+            const priorityCtx = document.getElementById('priorityChart').getContext('2d');
+            new Chart(priorityCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.priority_distribution.labels,
+                    datasets: [{
+                        label: 'Number of Incidents',
+                        data: data.priority_distribution.data,
+                        backgroundColor: data.priority_distribution.labels.map(label => priorityColors[label] || '#6c757d'),
+                        borderWidth: 2,
+                        borderColor: '#495057'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#ffffff'
+                            },
+                            grid: {
+                                color: '#495057'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#ffffff'
+                            },
+                            grid: {
+                                color: '#495057'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#ffffff'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Monthly Trends Chart
+        if (data.monthly_trends && data.monthly_trends.labels.length > 0) {
+            const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+            new Chart(trendsCtx, {
+                type: 'line',
+                data: {
+                    labels: data.monthly_trends.labels,
+                    datasets: [{
+                        label: 'Incidents per Month',
+                        data: data.monthly_trends.data,
+                        borderColor: '#17a2b8',
+                        backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#ffffff'
+                            },
+                            grid: {
+                                color: '#495057'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#ffffff'
+                            },
+                            grid: {
+                                color: '#495057'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#ffffff'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

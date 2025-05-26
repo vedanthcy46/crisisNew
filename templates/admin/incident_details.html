@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Incident Details - Crisis Management System{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-info-circle me-2"></i>Incident Details #{{ incident.id }}</h2>
+                <a href="{{ url_for('admin.incidents') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Incidents
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Incident Information -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Incident Information</h5>
+                </div>
+                <div class="card-body">
+                    <h4>{{ incident.title }}</h4>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Type:</strong>
+                            <span class="badge bg-info ms-2">{{ incident.incident_type.replace('_', ' ').title() }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Priority:</strong>
+                            <span class="badge bg-{{ incident.get_priority_color() }} ms-2">{{ incident.priority.title() }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Status:</strong>
+                            <span class="badge bg-{{ incident.get_status_color() }} ms-2">{{ incident.status.replace('_', ' ').title() }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Reported by:</strong> {{ incident.reporter.full_name }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Description:</strong>
+                        <p class="mt-2">{{ incident.description }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Location:</strong>
+                        <p class="mt-2">{{ incident.address }}</p>
+                        {% if incident.latitude and incident.longitude %}
+                            <small class="text-muted">
+                                GPS Coordinates: {{ "%.6f"|format(incident.latitude) }}, {{ "%.6f"|format(incident.longitude) }}
+                            </small>
+                        {% endif %}
+                    </div>
+                    
+                    {% if incident.image_path %}
+                    <div class="mb-3">
+                        <strong>Attached Image:</strong>
+                        <div class="mt-2">
+                            <img src="{{ url_for('static', filename='uploads/' + incident.image_path) }}" 
+                                 alt="Incident Image" class="img-fluid rounded" style="max-width: 100%; height: auto;">
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Date Reported:</strong> {{ incident.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                        </div>
+                        <div class="col-md-6">
+                            {% if incident.resolved_at %}
+                                <strong>Date Resolved:</strong> {{ incident.resolved_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Admin Actions -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <!-- Assign Team -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-user-shield me-2"></i>Assign Rescue Team</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if incident.assigned_team %}
+                                <p class="mb-2">
+                                    <strong>Currently Assigned:</strong><br>
+                                    {{ incident.assigned_team.full_name }}
+                                </p>
+                            {% endif %}
+                            <form method="POST" action="{{ url_for('admin.assign_team', incident_id=incident.id) }}">
+                                {{ assign_team_form.hidden_tag() }}
+                                <div class="mb-3">
+                                    {{ assign_team_form.team_id(class="form-select") }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ assign_team_form.notes(class="form-control", placeholder="Assignment notes (optional)") }}
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-user-plus me-1"></i>Assign Team
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <!-- Assign Resource -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-tools me-2"></i>Assign Resource</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('admin.assign_resource', incident_id=incident.id) }}">
+                                {{ assign_resource_form.hidden_tag() }}
+                                <div class="mb-3">
+                                    {{ assign_resource_form.resource_id(class="form-select") }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ assign_resource_form.notes(class="form-control", placeholder="Assignment notes (optional)") }}
+                                </div>
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fas fa-plus me-1"></i>Assign Resource
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Assigned Resources -->
+            {% if incident.resources %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-list me-2"></i>Assigned Resources</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Resource</th>
+                                    <th>Type</th>
+                                    <th>Assigned</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in incident.resources %}
+                                <tr>
+                                    <td>{{ assignment.resource.name }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ assignment.resource.resource_type.title() }}</span>
+                                    </td>
+                                    <td>{{ assignment.assigned_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>{{ assignment.notes or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Reporter Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-user me-2"></i>Reporter Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Name:</strong><br>
+                        {{ incident.reporter.full_name }}
+                    </div>
+                    {% if incident.reporter.phone %}
+                    <div class="mb-2">
+                        <strong>Phone:</strong><br>
+                        {{ incident.reporter.phone }}
+                    </div>
+                    {% endif %}
+                    <div class="mb-2">
+                        <strong>Email:</strong><br>
+                        {{ incident.reporter.email }}
+                    </div>
+                    {% if incident.reporter.address %}
+                    <div class="mb-2">
+                        <strong>Address:</strong><br>
+                        <small>{{ incident.reporter.address }}</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Status History -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-history me-2"></i>Status History</h6>
+                </div>
+                <div class="card-body">
+                    {% if status_updates %}
+                        <div class="timeline">
+                            {% for update in status_updates %}
+                            <div class="timeline-item mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="badge bg-info">
+                                            {{ update.old_status|title if update.old_status else 'Initial' }} → {{ update.new_status|title }}
+                                        </span>
+                                        {% if update.notes %}
+                                            <p class="small mb-1 mt-1">{{ update.notes }}</p>
+                                        {% endif %}
+                                        <small class="text-muted">
+                                            by {{ update.updater.full_name }}<br>
+                                            {{ update.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-clipboard-list fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0 small">No status updates yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Auto-refresh page every 30 seconds to show status updates
+    setTimeout(() => {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}

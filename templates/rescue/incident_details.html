@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Incident Details - Crisis Management System{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-info-circle me-2"></i>Incident Details #{{ incident.id }}</h2>
+                <div>
+                    <a href="{{ url_for('rescue.dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    {% if not can_update and not incident.assigned_team_id %}
+                        <a href="{{ url_for('rescue.accept_incident', incident_id=incident.id) }}" 
+                           class="btn btn-success ms-2"
+                           onclick="return confirm('Are you sure you want to accept this incident?')">
+                            <i class="fas fa-hand-paper me-2"></i>Accept Assignment
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Incident Information -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Incident Information</h5>
+                </div>
+                <div class="card-body">
+                    <h4>{{ incident.title }}</h4>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Type:</strong>
+                            <span class="badge bg-info ms-2">{{ incident.incident_type.replace('_', ' ').title() }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Priority:</strong>
+                            <span class="badge bg-{{ incident.get_priority_color() }} ms-2">{{ incident.priority.title() }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Status:</strong>
+                            <span class="badge bg-{{ incident.get_status_color() }} ms-2">{{ incident.status.replace('_', ' ').title() }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Reported by:</strong> {{ incident.reporter.full_name }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Description:</strong>
+                        <p class="mt-2">{{ incident.description }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Location:</strong>
+                        <p class="mt-2">{{ incident.address }}</p>
+                        {% if incident.latitude and incident.longitude %}
+                            <small class="text-muted">
+                                GPS Coordinates: {{ "%.6f"|format(incident.latitude) }}, {{ "%.6f"|format(incident.longitude) }}
+                            </small>
+                        {% endif %}
+                    </div>
+                    
+                    {% if incident.image_path %}
+                    <div class="mb-3">
+                        <strong>Attached Image:</strong>
+                        <div class="mt-2">
+                            <img src="{{ url_for('static', filename='uploads/' + incident.image_path) }}" 
+                                 alt="Incident Image" class="img-fluid rounded" style="max-width: 100%; height: auto;">
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Date Reported:</strong> {{ incident.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                        </div>
+                        <div class="col-md-6">
+                            {% if incident.resolved_at %}
+                                <strong>Date Resolved:</strong> {{ incident.resolved_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status Update Form -->
+            {% if can_update and form %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Update Status</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('rescue.update_status', incident_id=incident.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.status.label(class="form-label") }}
+                                {{ form.status(class="form-select") }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows="3") }}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Status
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Assignment Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-users me-2"></i>Assignment Information</h6>
+                </div>
+                <div class="card-body">
+                    {% if incident.assigned_team %}
+                        <div class="mb-2">
+                            <strong>Assigned Team:</strong><br>
+                            <span class="text-success">
+                                <i class="fas fa-user-shield me-1"></i>{{ incident.assigned_team.full_name }}
+                            </span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Contact:</strong><br>
+                            {% if incident.assigned_team.phone %}
+                                <small>{{ incident.assigned_team.phone }}</small><br>
+                            {% endif %}
+                            <small>{{ incident.assigned_team.email }}</small>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-clock fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">No team assigned yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Reporter Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-user me-2"></i>Reporter Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Name:</strong><br>
+                        {{ incident.reporter.full_name }}
+                    </div>
+                    {% if incident.reporter.phone %}
+                    <div class="mb-2">
+                        <strong>Phone:</strong><br>
+                        {{ incident.reporter.phone }}
+                    </div>
+                    {% endif %}
+                    <div class="mb-2">
+                        <strong>Email:</strong><br>
+                        {{ incident.reporter.email }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status History -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-history me-2"></i>Status History</h6>
+                </div>
+                <div class="card-body">
+                    {% if status_updates %}
+                        <div class="timeline">
+                            {% for update in status_updates %}
+                            <div class="timeline-item mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="badge bg-{{ update.new_status|replace('_', ' ')|title|replace(' ', '')|lower }}">
+                                            {{ update.old_status|title if update.old_status else 'Initial' }} → {{ update.new_status|title }}
+                                        </span>
+                                        {% if update.notes %}
+                                            <p class="small mb-1 mt-1">{{ update.notes }}</p>
+                                        {% endif %}
+                                        <small class="text-muted">
+                                            by {{ update.updater.full_name }}<br>
+                                            {{ update.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-clipboard-list fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0 small">No status updates yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Auto-refresh page every 30 seconds to show status updates
+    setTimeout(() => {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}
