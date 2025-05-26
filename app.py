@@ -61,8 +61,83 @@ def create_app():
     # Main route
     @app.route('/')
     def index():
-        from flask import redirect, url_for
-        return redirect(url_for('auth.login'))
+        from flask import redirect, url_for, render_template
+        from flask_login import current_user
+        from auth.routes import redirect_to_dashboard
+        
+        if current_user.is_authenticated:
+            return redirect_to_dashboard()
+        return render_template('landing.html')
+    
+    # API endpoints for map data
+    @app.route('/api/incidents')
+    def api_incidents():
+        from flask import jsonify
+        from models import Incident, User
+        
+        incidents = Incident.query.all()
+        incidents_data = []
+        
+        for incident in incidents:
+            if incident.latitude and incident.longitude:
+                assigned_team_name = None
+                if incident.assigned_team_id:
+                    team = User.query.get(incident.assigned_team_id)
+                    if team:
+                        assigned_team_name = team.full_name
+                
+                incidents_data.append({
+                    'id': incident.id,
+                    'title': incident.title,
+                    'description': incident.description,
+                    'incident_type': incident.incident_type,
+                    'priority': incident.priority,
+                    'status': incident.status,
+                    'latitude': incident.latitude,
+                    'longitude': incident.longitude,
+                    'created_at': incident.created_at.isoformat(),
+                    'assigned_team': assigned_team_name
+                })
+        
+        return jsonify({'incidents': incidents_data})
+    
+    @app.route('/api/resources')
+    def api_resources():
+        from flask import jsonify
+        from models import Resource
+        
+        resources = Resource.query.all()
+        resources_data = []
+        
+        for resource in resources:
+            # For demo, we'll add some mock coordinates based on resource location
+            lat, lng = None, None
+            if resource.location:
+                # Simple coordinate assignment for demo (in real app, geocode the location)
+                if 'north' in resource.location.lower():
+                    lat, lng = 40.7589, -73.9851  # Central Park area
+                elif 'south' in resource.location.lower():
+                    lat, lng = 40.7505, -73.9934  # Times Square area
+                elif 'east' in resource.location.lower():
+                    lat, lng = 40.7614, -73.9776  # Upper East Side
+                elif 'west' in resource.location.lower():
+                    lat, lng = 40.7614, -73.9776  # Upper West Side
+                else:
+                    lat, lng = 40.7128, -74.0060  # Default NYC
+            
+            if lat and lng:
+                resources_data.append({
+                    'id': resource.id,
+                    'name': resource.name,
+                    'resource_type': resource.resource_type,
+                    'availability_status': resource.availability_status,
+                    'description': resource.description,
+                    'location': resource.location,
+                    'latitude': lat,
+                    'longitude': lng
+                })
+        
+        return jsonify({'resources': resources_data})
     
     # Create database tables
     with app.app_context():
