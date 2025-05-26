@@ -125,7 +125,9 @@
                             <form method="POST" action="{{ url_for('admin.assign_resource', incident_id=incident.id) }}">
                                 {{ assign_resource_form.hidden_tag() }}
                                 <div class="mb-3">
-                                    {{ assign_resource_form.resource_ids(class="form-select", multiple=true) }}
+                                    <label class="form-label">Select Resources:</label>
+                                    {{ assign_resource_form.resource_ids(class="form-select", multiple=true, size="4") }}
+                                    <div class="form-text">Hold Ctrl/Cmd to select multiple resources</div>
                                 </div>
                                 <div class="mb-3">
                                     {{ assign_resource_form.notes(class="form-control", placeholder="Assignment notes (optional)") }}
