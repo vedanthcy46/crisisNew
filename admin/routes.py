@@ -448,3 +448,87 @@ def analytics_data():
             'data': [item[2] for item in monthly_data]
         }
     })
+
+# Delete functionality for all entities
+@admin_bp.route('/delete/user/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # Prevent deleting yourself
+    if user.id == current_user.id:
+        flash('You cannot delete your own account.', 'error')
+        return redirect(url_for('admin.users'))
+    
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'User {user.username} deleted successfully.', 'success')
+        current_app.logger.info(f"User {user.username} deleted by admin {current_user.username}")
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting user. User may have associated records.', 'error')
+        current_app.logger.error(f'Error deleting user: {str(e)}')
+    
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/delete/resource/<int:resource_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_resource(resource_id):
+    resource = Resource.query.get_or_404(resource_id)
+    
+    try:
+        db.session.delete(resource)
+        db.session.commit()
+        flash(f'Resource {resource.name} deleted successfully.', 'success')
+        current_app.logger.info(f"Resource {resource.name} deleted by admin {current_user.username}")
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting resource. Resource may be assigned to incidents.', 'error')
+        current_app.logger.error(f'Error deleting resource: {str(e)}')
+    
+    return redirect(url_for('admin.resources'))
+
+@admin_bp.route('/delete/incident/<int:incident_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_incident(incident_id):
+    incident = Incident.query.get_or_404(incident_id)
+    
+    try:
+        db.session.delete(incident)
+        db.session.commit()
+        flash(f'Incident {incident.title} deleted successfully.', 'success')
+        current_app.logger.info(f"Incident {incident.title} deleted by admin {current_user.username}")
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting incident.', 'error')
+        current_app.logger.error(f'Error deleting incident: {str(e)}')
+    
+    return redirect(url_for('admin.incidents'))
+
+@admin_bp.route('/release/resource/<int:assignment_id>', methods=['POST'])
+@login_required
+@admin_required
+def release_resource(assignment_id):
+    assignment = IncidentResource.query.get_or_404(assignment_id)
+    
+    try:
+        # Mark assignment as released
+        assignment.released_at = datetime.utcnow()
+        
+        # Update resource availability
+        resource = Resource.query.get(assignment.resource_id)
+        resource.availability_status = 'available'
+        
+        db.session.commit()
+        flash(f'Resource {resource.name} released successfully.', 'success')
+        current_app.logger.info(f"Resource {resource.name} released from incident {assignment.incident_id} by admin {current_user.username}")
+    except Exception as e:
+        db.session.rollback()
+        flash('Error releasing resource.', 'error')
+        current_app.logger.error(f'Error releasing resource: {str(e)}')
+    
+    return redirect(url_for('admin.view_incident', incident_id=assignment.incident_id))
