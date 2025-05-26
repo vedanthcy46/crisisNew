@@ -273,7 +273,7 @@ def view_incident(incident_id):
     assign_team_form.team_id.choices = [(t.id, f"{t.full_name} ({t.username})") for t in rescue_teams]
     
     assign_resource_form = AssignResourceForm()
-    assign_resource_form.resource_id.choices = [(r.id, f"{r.name} ({r.resource_type})") for r in available_resources]
+    assign_resource_form.resource_ids.choices = [(r.id, f"{r.name} ({r.resource_type})") for r in available_resources]
     
     status_form = StatusUpdateForm()
     
@@ -334,32 +334,42 @@ def assign_resource(incident_id):
     
     # Populate choices
     available_resources = Resource.query.filter_by(availability_status='available').all()
-    form.resource_id.choices = [(r.id, f"{r.name} ({r.resource_type})") for r in available_resources]
+    form.resource_ids.choices = [(r.id, f"{r.name} ({r.resource_type})") for r in available_resources]
     
     if form.validate_on_submit():
         try:
-            resource = Resource.query.get(form.resource_id.data)
+            assigned_count = 0
+            for resource_id in form.resource_ids.data:
+                resource = Resource.query.get(resource_id)
+                if resource:
+                    # Check if resource is already assigned to this incident
+                    existing_assignment = IncidentResource.query.filter_by(
+                        incident_id=incident.id,
+                        resource_id=resource.id,
+                        released_at=None
+                    ).first()
+                    
+                    if not existing_assignment:
+                        # Create resource assignment
+                        assignment = IncidentResource(
+                            incident_id=incident.id,
+                            resource_id=resource.id,
+                            notes=form.notes.data
+                        )
+                        
+                        # Update resource status
+                        resource.availability_status = 'in_use'
+                        
+                        db.session.add(assignment)
+                        assigned_count += 1
             
-            # Check if resource is already assigned to this incident
-            existing_assignment = IncidentResource.query.filter_by(
-                incident_id=incident.id,
-                resource_id=resource.id,
-                released_at=None
-            ).first()
-            
-            if existing_assignment:
-                flash('This resource is already assigned to this incident.', 'warning')
-                return redirect(url_for('admin.view_incident', incident_id=incident_id))
-            
-            # Create resource assignment
-            assignment = IncidentResource(
-                incident_id=incident.id,
-                resource_id=resource.id,
-                notes=form.notes.data
-            )
-            
-            # Update resource status
-            resource.availability_status = 'in_use'
+            if assigned_count > 0:
+                db.session.commit()
+                current_app.logger.info(f"{assigned_count} resources assigned to incident {incident.id} by {current_user.role} {current_user.username}")
+                flash(f'{assigned_count} resource(s) assigned successfully!', 'success')
+            else:
+                flash('No new resources were assigned (may already be assigned)', 'warning')
+
             
             # Create status update
             notes = form.notes.data or f"Resource assigned: {resource.name}"

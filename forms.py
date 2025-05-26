@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
-from wtforms import StringField, TextAreaField, SelectField, PasswordField, HiddenField, FloatField
+from wtforms import StringField, TextAreaField, SelectField, SelectMultipleField, PasswordField, HiddenField, FloatField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, Optional, NumberRange
 from models import User
 
@@ -104,8 +104,9 @@ class ResourceForm(FlaskForm):
     location = StringField('Location', validators=[Optional(), Length(max=200)])
 
 class AssignResourceForm(FlaskForm):
-    resource_id = SelectField('Resource', coerce=int, validators=[DataRequired()])
+    resource_ids = SelectMultipleField('Resources', coerce=int, validators=[DataRequired()])
     notes = TextAreaField('Assignment Notes', validators=[Optional(), Length(max=500)])
+    submit = SubmitField('Assign Resources')
 
 class AssignTeamForm(FlaskForm):
     team_id = SelectField('Rescue Team', coerce=int, validators=[DataRequired()])
