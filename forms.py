@@ -111,3 +111,17 @@ class AssignResourceForm(FlaskForm):
 class AssignTeamForm(FlaskForm):
     team_id = SelectField('Rescue Team', coerce=int, validators=[DataRequired()])
     notes = TextAreaField('Assignment Notes', validators=[Optional(), Length(max=500)])
+
+class ProfileForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=3, max=64)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    full_name = StringField('Full Name', validators=[DataRequired(), Length(min=2, max=100)])
+    phone = StringField('Phone Number', validators=[Optional(), Length(max=20)])
+    address = TextAreaField('Address', validators=[Optional()])
+    current_password = PasswordField('Current Password', validators=[Optional()])
+    new_password = PasswordField('New Password', validators=[Optional(), Length(min=6, max=128)])
+    confirm_password = PasswordField('Confirm New Password', validators=[
+        Optional(), 
+        EqualTo('new_password', message='Passwords must match')
+    ])
+    submit = SubmitField('Update Profile')

@@ -139,6 +139,63 @@ def create_app():
         
         return jsonify({'resources': resources_data})
     
+    # Profile route
+    @app.route('/profile', methods=['GET', 'POST'])
+    def profile():
+        from flask import render_template, flash, redirect, request
+        from flask_login import login_required, current_user
+        from forms import ProfileForm
+        from werkzeug.security import check_password_hash, generate_password_hash
+        from datetime import datetime
+        
+        # Check if user is logged in
+        if not current_user.is_authenticated:
+            return redirect(url_for('auth.login'))
+        
+        form = ProfileForm()
+        
+        # Pre-populate form with current user data
+        if request.method == 'GET':
+            form.username.data = current_user.username
+            form.email.data = current_user.email
+            form.full_name.data = current_user.full_name
+            form.phone.data = current_user.phone
+            form.address.data = current_user.address
+        
+        if form.validate_on_submit():
+            # Check if new password was provided
+            if form.new_password.data:
+                if not form.current_password.data:
+                    flash('Current password is required to change password.', 'error')
+                    return render_template('profile.html', form=form)
+                
+                if not check_password_hash(current_user.password_hash, form.current_password.data):
+                    flash('Current password is incorrect.', 'error')
+                    return render_template('profile.html', form=form)
+                
+                # Update password
+                current_user.password_hash = generate_password_hash(form.new_password.data)
+            
+            # Update profile information
+            current_user.email = form.email.data
+            current_user.full_name = form.full_name.data
+            current_user.phone = form.phone.data
+            current_user.address = form.address.data
+            current_user.updated_at = datetime.utcnow()
+            
+            try:
+                db.session.commit()
+                flash('Profile updated successfully!', 'success')
+                current_app.logger.info(f"Profile updated for user {current_user.username}")
+            except Exception as e:
+                db.session.rollback()
+                flash('Error updating profile. Please try again.', 'error')
+                current_app.logger.error(f'Error updating profile: {str(e)}')
+            
+            return redirect(url_for('profile'))
+        
+        return render_template('profile.html', form=form)
+    
     # Create database tables
     with app.app_context():
         import models  # noqa: F401
