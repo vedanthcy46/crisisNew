@@ -3,3 +3,4 @@ flask_sqlalchemy
 pymongo
 requests
 gunicorn
+flask_login
