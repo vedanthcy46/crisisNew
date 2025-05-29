@@ -49,8 +49,9 @@ class Incident(db.Model):
     longitude = db.Column(db.Float)
     address = db.Column(db.Text)
     
-    # File upload
-    image_path = db.Column(db.String(200))
+    # File upload - MongoDB image ID
+    image_id = db.Column(db.String(24))
+    rescue_image_id = db.Column(db.String(24))  # Image uploaded by rescue team
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
