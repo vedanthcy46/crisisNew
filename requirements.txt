@@ -1,5 +1,5 @@
-numpy>=1.24
-pywin32>=306
 flask
-sqlalchemy
+flask_sqlalchemy
 pymongo
+requests
+gunicorn
