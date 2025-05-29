@@ -4,3 +4,4 @@ pymongo
 requests
 gunicorn
 flask_login
+psycopg2
